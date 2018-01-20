@@ -13,8 +13,11 @@ import (
 	"github.com/jhunt/go-s3"
 )
 
+var Version = ""
+
 var opts struct {
-	Help bool `cli:"-h, --help"`
+	Help    bool `cli:"-h, --help"`
+	Version bool `cli:"-v, --version"`
 
 	ID     string `cli:"--aki"        env:"S3_AKI"`
 	Key    string `cli:"--key"        env:"S3_KEY"`
@@ -99,6 +102,15 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "@R{!!! %s}\n", err)
 		os.Exit(1)
+	}
+
+	if opts.Version {
+		if Version == "" {
+			fmt.Printf("s3 (development version)\n")
+		} else {
+			fmt.Printf("s3 v%s\n", Version)
+		}
+		os.Exit(0)
 	}
 
 	if command == "commands" {
