@@ -24,7 +24,7 @@ var opts struct {
 	ACLs     struct{} `cli:"acls"`
 
 	CreateBucket struct {
-		ACL string `cli:"--acl" env:"S3_ACL"`
+		ACL string `cli:"--acl, --policy" env:"S3_ACL"`
 	} `cli:"create-bucket"`
 
 	DeleteBucket struct {
