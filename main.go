@@ -31,21 +31,21 @@ var opts struct {
 
 	CreateBucket struct {
 		ACL string `cli:"--acl, --policy" env:"S3_ACL"`
-	} `cli:"create-bucket"`
+	} `cli:"create-bucket, new-bucket, cb"`
 
 	DeleteBucket struct {
 		Recursive bool `cli:"-R"`
-	} `cli:"delete-bucket"`
+	} `cli:"delete-bucket, remove-bucket"`
 
 	Bucket string `cli:"-b, --bucket" env:"S3_BUCKET"`
 
 	Upload struct {
 		To string `cli:"--to"`
-	} `cli:"put,upload"`
+	} `cli:"put, upload"`
 
 	Download struct {
 		To string `cli:"--to"`
-	} `cli:"get,download"`
+	} `cli:"get, download"`
 
 	Cat struct {
 	} `cli:"cat"`
@@ -55,10 +55,10 @@ var opts struct {
 
 	Delete struct {
 		Recursive bool `cli:"-R"`
-	} `cli:"rm,delete"`
+	} `cli:"rm, remove, delete"`
 
 	List struct {
-	} `cli:"ls,list"`
+	} `cli:"ls, list"`
 }
 
 func client() (*s3.Client, error) {
