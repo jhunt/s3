@@ -198,14 +198,33 @@ func main() {
 	}
 
 	if command == "delete-bucket" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{delete-bucket} [OPTIONS] @Y{NAME}\n")
+			fmt.Printf("@M{Deletes a bucket from S3}\n\n")
+			fmt.Printf("OPTIONS\n")
+			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
+
+			fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+			fmt.Printf("                  via the @W{$S3_KEY} environment variable.\n\n")
+
+			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+			fmt.Printf("                  should be suitable for actual AWS S3.\n")
+			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  -R              Recursively remove all of the files in the bucket\n")
+			fmt.Printf("                  before deleting it.  @R{This is dangerous}.\n\n")
+
+			os.Exit(0)
+		}
 		if len(args) == 0 {
 			fmt.Fprintf(os.Stderr, "@R{!!! missing bucket name argument.}\n")
-			fmt.Fprintf(os.Stderr, "USAGE: s3 delete-bucket NAME\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{delete-bucket} [OPTIONS] @Y{NAME}\n")
 			os.Exit(1)
 		}
 		if len(args) > 1 {
 			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
-			fmt.Fprintf(os.Stderr, "USAGE: s3 delete-bucket NAME\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{delete-bucket} [OPTIONS] @Y{NAME}\n")
 			os.Exit(1)
 		}
 
@@ -213,9 +232,18 @@ func main() {
 		bail(err)
 
 		c.Region = "us-east-1"
-		err = c.DeleteBucket(args[0])
-		bail(err)
 
+		if opts.DeleteBucket.Recursive {
+			c.Bucket = args[0]
+			files, err := c.List()
+			bail(err)
+
+			for _, f := range files {
+				bail(c.Delete(f.Key))
+			}
+		}
+
+		bail(c.DeleteBucket(args[0]))
 		fmt.Printf("bucket @Y{%s} deleted.\n", args[0])
 		os.Exit(0)
 	}
