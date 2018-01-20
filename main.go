@@ -49,6 +49,7 @@ var opts struct {
 	} `cli:"url"`
 
 	Delete struct {
+		Recursive bool `cli:"-R"`
 	} `cli:"rm,delete"`
 
 	List struct {
@@ -492,6 +493,9 @@ func main() {
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
 
+			fmt.Printf("  -R              Recursively remove all of the files in the bucket\n")
+			fmt.Printf("                  under the given path.  @R{This is dangerous}.\n\n")
+
 			os.Exit(0)
 		}
 		if len(args) == 0 {
@@ -512,9 +516,18 @@ func main() {
 		c, err := client()
 		bail(err)
 
-		err = c.Delete(args[0])
-		bail(err)
+		if opts.Delete.Recursive {
+			files, err := c.List()
+			bail(err)
 
+			root := strings.TrimSuffix(args[0], "/")
+			for _, f := range files {
+				if f.Key == root || strings.HasPrefix(f.Key, root+"/") {
+					bail(c.Delete(f.Key))
+				}
+			}
+		}
+		bail(c.Delete(args[0]))
 		os.Exit(0)
 	}
 
