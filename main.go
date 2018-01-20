@@ -45,8 +45,11 @@ var opts struct {
 	Cat struct {
 	} `cli:"cat"`
 
+	GenerateURL struct {
+	} `cli:"url"`
+
 	Delete struct {
-	} `cli:"rm, delete"`
+	} `cli:"rm,delete"`
 
 	List struct {
 	} `cli:"ls,list"`
@@ -108,6 +111,7 @@ func main() {
 		fmt.Printf("  @C{put}             Upload a new file to S3.\n")
 		fmt.Printf("  @C{get}             Download a file from S3.\n")
 		fmt.Printf("  @C{cat}             Print the contents of a file in S3.\n")
+		fmt.Printf("  @C{url}             Print the HTTPS URL for a file in S3.\n")
 		fmt.Printf("  @C{rm}              Delete file from a bucket.\n")
 		fmt.Printf("  @C{ls}              List the files in a bucket.\n")
 		fmt.Printf("\n")
@@ -438,6 +442,35 @@ func main() {
 		_, err = io.Copy(os.Stdout, out)
 		bail(err)
 
+		os.Exit(0)
+	}
+
+	if command == "url" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{url} [OPTIONS] @Y{remote/file/path}\n")
+			fmt.Printf("@M{Generate an HTTPS URL for accessing a single file in a bucket}\n\n")
+			fmt.Printf("OPTIONS\n")
+			fmt.Printf("  --bucket NAME   The name of the S3 bucket that holds the file.\n")
+			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
+
+			os.Exit(0)
+		}
+		if len(args) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{!!! missing path argument.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{url} [OPTIONS] @Y{remote/file/path}\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{url} [OPTIONS] @Y{remote/file/path}\n")
+			os.Exit(1)
+		}
+
+		if opts.Bucket == "" {
+			bail(fmt.Errorf("missing required --bucket option."))
+		}
+
+		fmt.Printf("https://%s.s3.amazonaws.com/%s\n", opts.Bucket, args[0])
 		os.Exit(0)
 	}
 
