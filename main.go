@@ -18,6 +18,8 @@ var Version = ""
 var opts struct {
 	Help    bool `cli:"-h, --help"`
 	Version bool `cli:"-v, --version"`
+	Debug   bool `cli:"-D, --debug"   env:"S3_DEBUG"`
+	Trace   bool `cli:"-T, --trace"   env:"S3_TRACE"`
 
 	ID     string `cli:"--aki"        env:"S3_AKI"`
 	Key    string `cli:"--key"        env:"S3_KEY"`
@@ -62,6 +64,7 @@ var opts struct {
 func client() (*s3.Client, error) {
 	domain := ""
 	if opts.URL != "" {
+		debugf("parsing domain from url @G{%s}...", opts.URL)
 		u, err := url.Parse(opts.URL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid --s3-url '%s': %s", opts.URL, err)
@@ -72,9 +75,18 @@ func client() (*s3.Client, error) {
 	if opts.ID == "" {
 		return nil, fmt.Errorf("missing required --id (or $S3_AKI) value")
 	}
+	debugf("setting AKI to @G{%s}", opts.ID)
 
 	if opts.Key == "" {
 		return nil, fmt.Errorf("missing required --key (or $S3_KEY) value")
+	}
+	debugf("setting Key to @G{%s}", opts.Key)
+	if opts.Bucket != "" {
+		debugf("using bucket @G{%s} in region @G{%s}", opts.Bucket, opts.Region)
+	} else if opts.Region != "" {
+		debugf("operating in region @G{%s}", opts.Region)
+	} else {
+		debugf("no @B{bucket} or @B{region} set")
 	}
 
 	return s3.NewClient(&s3.Client{
@@ -93,10 +105,20 @@ func bail(err error) {
 	}
 }
 
+func debugf(m string, args ...interface{}) {
+	if opts.Debug {
+		fmt.Fprintf(os.Stderr, "@Y{DEBUG> }"+m+"\n", args...)
+	}
+}
+
 func main() {
 	env.Override(&opts)
 	opts.Region = "us-east-1"
 	opts.CreateBucket.ACL = "private"
+
+	if opts.Trace {
+		os.Setenv("S3_TRACE", "yes")
+	}
 
 	command, args, err := cli.Parse(&opts)
 	if err != nil {
@@ -112,6 +134,10 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	debugf("@G{s3} starting up...")
+	debugf("determined command to be '@C{%s}'", command)
+	debugf("determined arguments to be @C{%v}", args)
 
 	if command == "commands" {
 		fmt.Printf("General usage: @G{s3} @C{COMMAND} @W{[OPTIONS...]}\n\n")
@@ -181,7 +207,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{create-bucket} [OPTIONS] @Y{NAME}\n")
 			fmt.Printf("@M{Creates a new bucket in S3}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -213,6 +244,8 @@ func main() {
 		bail(err)
 
 		c.Region = "us-east-1"
+		debugf("creating bucket @G{%s} in region @G{%s}", args[0], c.Region)
+		debugf("using bucket access control policy @G{%s}", opts.CreateBucket.ACL)
 		err = c.CreateBucket(args[0], "", opts.CreateBucket.ACL)
 		bail(err)
 
@@ -224,7 +257,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{delete-bucket} [OPTIONS] @Y{NAME}\n")
 			fmt.Printf("@M{Deletes a bucket from S3}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -252,21 +290,24 @@ func main() {
 		}
 
 		c, err := client()
+		c.Region = "us-east-1"
 		bail(err)
 
-		c.Region = "us-east-1"
-
 		if opts.DeleteBucket.Recursive {
+			debugf("recursively deleting all files in bucket...")
 			c.Bucket = args[0]
 			files, err := c.List()
 			bail(err)
 
 			for _, f := range files {
+				debugf("  - deleting @R{%s}", f.Key)
 				bail(c.Delete(f.Key))
 			}
 		}
 
+		debugf("deleting bucket @R{%s} from region @R{%s}", c.Bucket, c.Region)
 		bail(c.DeleteBucket(args[0]))
+
 		fmt.Printf("bucket @Y{%s} deleted.\n", args[0])
 		os.Exit(0)
 	}
@@ -275,7 +316,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{put} [OPTIONS] @Y{local/file/path}\n")
 			fmt.Printf("@M{Uploads a local file to an S3 bucket}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -318,6 +364,7 @@ func main() {
 				bail(fmt.Errorf("uploading from stdin requires the --to option."))
 			}
 			opts.Upload.To = strings.TrimLeft(args[0], "./")
+			debugf("determined upload file path to be @C{%s}", opts.Upload.To)
 		}
 
 		c, err := client()
@@ -327,7 +374,10 @@ func main() {
 		bail(err)
 
 		from := os.Stdin
-		if args[0] != "-" {
+		if args[0] == "-" {
+			debugf("streaming data from @G{standard input} to @Y{%s}:@C{%s}", c.Bucket, opts.Upload.To)
+		} else {
+			debugf("uploading @C{%s} to @Y{%s}:@C{%s}", args[0], c.Bucket, opts.Upload.To)
 			from, err = os.Open(args[0])
 			bail(err)
 			defer from.Close()
@@ -346,7 +396,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{get} [OPTIONS] @Y{remote/file/path}\n")
 			fmt.Printf("@M{Download a file from S3}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -392,6 +447,7 @@ func main() {
 		bail(err)
 
 		if opts.Download.To == "-" {
+			debugf("streaming @Y{%s}:@C{%s} to @G{standard output}", c.Bucket, args[0])
 			_, err = io.Copy(os.Stdout, out)
 			bail(err)
 			os.Exit(0)
@@ -401,8 +457,10 @@ func main() {
 			if opts.Download.To == "." {
 				bail(fmt.Errorf("I don't know how to handle the path '%s'", args[0]))
 			}
+			debugf("determined destination file path to be @C{%s}", opts.Download.To)
 		}
 
+		debugf("downloading @Y{%s}:@C{%s} to @C{%s}", c.Bucket, args[0], opts.Download.To)
 		file, err := os.OpenFile(opts.Download.To, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
 		bail(err)
 
@@ -415,7 +473,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{cat} [OPTIONS] @Y{remote/file/path}\n")
 			fmt.Printf("@M{Print the contents of a remote S3 file to standard output}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -452,6 +515,7 @@ func main() {
 		out, err := c.Get(args[0])
 		bail(err)
 
+		debugf("streaming @Y{%s}:@C{%s} to @G{standard output}", c.Bucket, args[0])
 		_, err = io.Copy(os.Stdout, out)
 		bail(err)
 
@@ -491,7 +555,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{rm} [OPTIONS] @Y{remote/file/path}\n")
 			fmt.Printf("@M{Removes a file from an S3 bucket}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -529,16 +598,23 @@ func main() {
 		bail(err)
 
 		if opts.Delete.Recursive {
+			root := strings.TrimSuffix(args[0], "/")
+			debugf("recursively deleting all files under @Y{%s}:@C{%s}", c.Bucket, args[0])
+
 			files, err := c.List()
 			bail(err)
 
-			root := strings.TrimSuffix(args[0], "/")
 			for _, f := range files {
-				if f.Key == root || strings.HasPrefix(f.Key, root+"/") {
+				if strings.HasPrefix(f.Key, root+"/") {
+					debugf("  - deleting @R{%s}", f.Key)
 					bail(c.Delete(f.Key))
+				} else {
+					debugf("  - skipping @C{%s}", f.Key)
 				}
 			}
 		}
+
+		debugf("deleting @Y{%s}:@C{%s}", c.Bucket, args[0])
 		bail(c.Delete(args[0]))
 		os.Exit(0)
 	}
@@ -547,7 +623,12 @@ func main() {
 		if opts.Help {
 			fmt.Printf("USAGE: @C{s3} @G{ls} [OPTIONS] -b @Y{BUCKET}\n")
 			fmt.Printf("@M{Print the contents of a remote S3 file to standard output}\n\n")
-			fmt.Printf("OPTIONS\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
 			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
 			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
 
@@ -576,7 +657,7 @@ func main() {
 		c, err := client()
 		bail(err)
 
-		c.Bucket = opts.Bucket
+		debugf("listing @Y{%s}:@C{*}", c.Bucket)
 		files, err := c.List()
 		bail(err)
 
