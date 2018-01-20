@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	fmt "github.com/jhunt/go-ansi"
@@ -37,8 +38,12 @@ var opts struct {
 		To string `cli:"--to"`
 	} `cli:"put,upload"`
 
+	Download struct {
+		To string `cli:"--to"`
+	} `cli:"get,download"`
+
 	Cat struct {
-	} `cli:"cat, get"`
+	} `cli:"cat"`
 
 	Delete struct {
 	} `cli:"rm, delete"`
@@ -101,6 +106,7 @@ func main() {
 		fmt.Printf("  @C{delete-bucket}   Delete an empty bucket.\n")
 		fmt.Printf("\n")
 		fmt.Printf("  @C{put}             Upload a new file to S3.\n")
+		fmt.Printf("  @C{get}             Download a file from S3.\n")
 		fmt.Printf("  @C{cat}             Print the contents of a file in S3.\n")
 		fmt.Printf("  @C{rm}              Delete file from a bucket.\n")
 		fmt.Printf("  @C{ls}              List the files in a bucket.\n")
@@ -316,6 +322,75 @@ func main() {
 		err = u.Done()
 		bail(err)
 
+		os.Exit(0)
+	}
+
+	if command == "get" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{get} [OPTIONS] @Y{remote/file/path}\n")
+			fmt.Printf("@M{Download a file from S3}\n\n")
+			fmt.Printf("OPTIONS\n")
+			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
+
+			fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+			fmt.Printf("                  via the @W{$S3_KEY} environment variable.\n\n")
+
+			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+			fmt.Printf("                  should be suitable for actual AWS S3.\n")
+			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --bucket NAME   The name of the S3 bucket to search.\n")
+			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
+
+			fmt.Printf("  --to rel/path   The relative path (locally) to download the file to.\n")
+			fmt.Printf("                  Defaults to the final component of the key in the\n")
+			fmt.Printf("                  bucket (i.e. a/b/c/d -> d)\n\n")
+
+			fmt.Printf("  You can give the file name to download to as @Y{-}, in which case\n")
+			fmt.Printf("  the contents of the file will be printed to standard output, which\n")
+			fmt.Printf("  behaves identically to @W{s3 cat}.\n\n")
+			os.Exit(0)
+			os.Exit(0)
+		}
+		if len(args) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{!!! missing path argument.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{get} [OPTIONS] @Y{remote/file/path}\n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{get} [OPTIONS] @Y{remote/file/path}\n")
+			os.Exit(1)
+		}
+
+		if opts.Bucket == "" {
+			bail(fmt.Errorf("missing required --bucket option."))
+		}
+
+		c, err := client()
+		bail(err)
+
+		out, err := c.Get(args[0])
+		bail(err)
+
+		if opts.Download.To == "-" {
+			_, err = io.Copy(os.Stdout, out)
+			bail(err)
+			os.Exit(0)
+		}
+		if opts.Download.To == "" {
+			opts.Download.To = filepath.Base(args[0])
+			if opts.Download.To == "." {
+				bail(fmt.Errorf("I don't know how to handle the path '%s'", args[0]))
+			}
+		}
+
+		file, err := os.OpenFile(opts.Download.To, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+		bail(err)
+
+		_, err = io.Copy(file, out)
+		bail(err)
 		os.Exit(0)
 	}
 
