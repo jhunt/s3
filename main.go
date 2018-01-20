@@ -661,8 +661,29 @@ func main() {
 		files, err := c.List()
 		bail(err)
 
+		w := struct {
+			Key          int
+			LastModified int
+			OwnerName    int
+			ETag         int
+			Size         int
+		}{
+			Key:          len("file"),
+			LastModified: len("last modified"),
+			OwnerName:    len("owner"),
+			ETag:         len("etag"),
+			Size:         len("size"),
+		}
 		for _, f := range files {
-			fmt.Printf("- %s %s %s %s %s\n", f.Key, f.LastModified, f.OwnerName, f.ETag, f.Size)
+			w.Key = max(w.Key, len(f.Key))
+			w.LastModified = max(w.LastModified, len(fmt.Sprintf("%s", f.LastModified)))
+			w.OwnerName = max(w.OwnerName, len(f.OwnerName))
+			w.ETag = max(w.ETag, len(f.ETag))
+			w.Size = max(w.Size, len(fmt.Sprintf("%s", f.Size)))
+		}
+		fmt.Printf("%-*s  %-*s  %-*s  %-*s  %-*s\n", w.Key, "file", w.LastModified, "last modified", w.OwnerName, "owner", w.ETag, "etag", w.Size, "size")
+		for _, f := range files {
+			fmt.Printf("@G{%-*s}  %-*s  %-*s  @C{%-*s}  @Y{%-*s}\n", w.Key, f.Key, w.LastModified, f.LastModified, w.OwnerName, f.OwnerName, w.ETag, f.ETag, w.Size, f.Size)
 		}
 		os.Exit(0)
 	}
@@ -674,4 +695,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Have you tried running @Y{s3 commands}?\n")
 	}
 	os.Exit(1)
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
