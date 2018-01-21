@@ -33,7 +33,7 @@ s3 create-bucket my-new-bucket
 To create a bucket with a specific ACL:
 
 ```
-s3 create-bucket my-new-bucket public-read
+s3 create-bucket my-new-bucket --acl public-read
 ```
 
 (Some commonly used ACLs include `private` [the default],
@@ -48,19 +48,19 @@ s3 delete-bucket my-old-bucket
 To upload a file:
 
 ```
-s3 upload-file ./local/file
+s3 put ./local/file
 ```
 
 To stream a file from standard input:
 
 ```
-other --program | s3 upload-file --to where/in/s3 -
+other --program | s3 put --to where/in/s3 -
 ```
 
 To list files in a bucket:
 
 ```
-s3 list
+s3 ls
 ```
 
 To delete a file:
