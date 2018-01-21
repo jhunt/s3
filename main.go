@@ -89,6 +89,10 @@ func client() (*s3.Client, error) {
 		debugf("no @B{bucket} or @B{region} set")
 	}
 
+	if opts.Trace {
+		os.Setenv("S3_TRACE", "yes")
+	}
+
 	return s3.NewClient(&s3.Client{
 		AccessKeyID:     opts.ID,
 		SecretAccessKey: opts.Key,
@@ -115,10 +119,6 @@ func main() {
 	env.Override(&opts)
 	opts.Region = "us-east-1"
 	opts.CreateBucket.ACL = "private"
-
-	if opts.Trace {
-		os.Setenv("S3_TRACE", "yes")
-	}
 
 	command, args, err := cli.Parse(&opts)
 	if err != nil {
