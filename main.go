@@ -31,6 +31,9 @@ var opts struct {
 	Commands struct{} `cli:"commands"`
 	ACLs     struct{} `cli:"acls"`
 
+	ListBuckets struct {
+	} `cli:"list-buckets, lsb"`
+
 	CreateBucket struct {
 		ACL string `cli:"--acl, --policy" env:"S3_ACL"`
 	} `cli:"create-bucket, new-bucket, cb"`
@@ -150,6 +153,7 @@ func main() {
 		fmt.Printf("  @C{acls}            List known ACLs and their purposes / access rules.\n")
 		fmt.Printf("  @C{commands}        List known sub-commands of this s3 client.\n")
 		fmt.Printf("\n")
+		fmt.Printf("  @C{list-buckets}    List all S3 buckets owned by you.\n")
 		fmt.Printf("  @C{create-bucket}   Create a new bucket.\n")
 		fmt.Printf("  @C{delete-bucket}   Delete an empty bucket.\n")
 		fmt.Printf("\n")
@@ -209,6 +213,66 @@ func main() {
 		fmt.Printf("    files in this bucket and append to them.  Not generally useful to\n")
 		fmt.Printf("    S3 work-alike systems.\n\n")
 
+		os.Exit(0)
+	}
+
+	if command == "list-buckets" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{list-buckets} [OPTIONS]\n")
+			fmt.Printf("@M{List all buckets you own in S3}\n\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
+			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
+
+			fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+			fmt.Printf("                  via the @W{$S3_KEY} environment variable.\n\n")
+
+			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+			fmt.Printf("                  should be suitable for actual AWS S3.\n")
+			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			os.Exit(0)
+		}
+		if len(args) > 0 {
+			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{list-buckets} [OPTIONS]\n")
+			os.Exit(1)
+		}
+
+		c, err := client()
+		bail(err)
+
+		c.Region = "us-east-1"
+		debugf("listing buckets in region @G{%s}", c.Region)
+		bb, err := c.ListBuckets()
+		bail(err)
+
+		w := struct {
+			Name         int
+			CreationDate int
+			OwnerName    int
+		}{
+			Name:         len("bucket"),
+			CreationDate: len("created at"),
+			OwnerName:    len("owner"),
+		}
+		for _, b := range bb {
+			w.Name = max(w.Name, len(b.Name))
+			w.CreationDate = max(w.CreationDate, len(fmt.Sprintf("%s", b.CreationDate)))
+			w.OwnerName = max(w.OwnerName, len(b.OwnerName))
+		}
+		fmt.Printf("%-*s  %-*s  %-*s\n", w.Name, "bucket", w.CreationDate, "created at", w.OwnerName, "owner")
+		for _, b := range bb {
+			fmt.Printf("@G{%-*s}  %-*s  @M{%-*s}\n", w.Name, b.Name, w.CreationDate, b.CreationDate, w.OwnerName, b.OwnerName)
+		}
+		if len(bb) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{no buckets found.}\n")
+		}
 		os.Exit(0)
 	}
 
