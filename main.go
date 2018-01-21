@@ -26,6 +26,8 @@ var opts struct {
 	URL    string `cli:"--s3-url"     env:"S3_URL"`
 	Region string `cli:"-r, --region" env:"S3_REGION"`
 
+	Recursive bool `cli:"-R"`
+
 	Commands struct{} `cli:"commands"`
 	ACLs     struct{} `cli:"acls"`
 
@@ -34,7 +36,6 @@ var opts struct {
 	} `cli:"create-bucket, new-bucket, cb"`
 
 	DeleteBucket struct {
-		Recursive bool `cli:"-R"`
 	} `cli:"delete-bucket, remove-bucket"`
 
 	Bucket string `cli:"-b, --bucket" env:"S3_BUCKET"`
@@ -54,7 +55,6 @@ var opts struct {
 	} `cli:"url"`
 
 	Delete struct {
-		Recursive bool `cli:"-R"`
 	} `cli:"rm, remove, delete"`
 
 	List struct {
@@ -293,7 +293,7 @@ func main() {
 		c.Region = "us-east-1"
 		bail(err)
 
-		if opts.DeleteBucket.Recursive {
+		if opts.Recursive {
 			debugf("recursively deleting all files in bucket...")
 			c.Bucket = args[0]
 			files, err := c.List()
@@ -597,7 +597,7 @@ func main() {
 		c, err := client()
 		bail(err)
 
-		if opts.Delete.Recursive {
+		if opts.Recursive {
 			root := strings.TrimSuffix(args[0], "/")
 			debugf("recursively deleting all files under @Y{%s}:@C{%s}", c.Bucket, args[0])
 
