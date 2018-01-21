@@ -127,6 +127,14 @@ func debugf(m string, args ...interface{}) {
 	}
 }
 
+func version() string {
+	if Version == "" {
+		return "(development version)"
+	} else {
+		return fmt.Sprintf("v%s", Version)
+	}
+}
+
 func main() {
 	env.Override(&opts)
 	opts.Region = "us-east-1"
@@ -139,15 +147,11 @@ func main() {
 	}
 
 	if opts.Version {
-		if Version == "" {
-			fmt.Printf("s3 (development version)\n")
-		} else {
-			fmt.Printf("s3 v%s\n", Version)
-		}
+		fmt.Printf("s3 %s\n", version())
 		os.Exit(0)
 	}
 
-	debugf("@G{s3} starting up...")
+	debugf("@G{s3} %s starting up...", version())
 	debugf("determined command to be '@C{%s}'", command)
 	debugf("determined arguments to be @C{%v}", args)
 
