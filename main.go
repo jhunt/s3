@@ -26,6 +26,8 @@ var opts struct {
 	URL    string `cli:"--s3-url"     env:"S3_URL"`
 	Region string `cli:"-r, --region" env:"S3_REGION"`
 
+	PathBased bool `cli:"-P, --path-buckets" env:"S3_USE_PATH"`
+
 	Recursive bool `cli:"-R"`
 
 	Commands struct{} `cli:"commands"`
@@ -108,6 +110,7 @@ func client() (*s3.Client, error) {
 		Domain:          domain,
 		Region:          opts.Region,
 		Bucket:          opts.Bucket,
+		UsePathBuckets:  opts.PathBased,
 	})
 }
 
@@ -236,6 +239,14 @@ func main() {
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
 
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
+
 			os.Exit(0)
 		}
 		if len(args) > 0 {
@@ -296,6 +307,14 @@ func main() {
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
 
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
+
 			fmt.Printf("  --acl ACL       An ACL / policy to apply to this bucket, and\n")
 			fmt.Printf("                  all files stored within.  Run `s3 acls` to see\n")
 			fmt.Printf("                  a full list of defined access control lists.\n")
@@ -345,6 +364,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  -R              Recursively remove all of the files in the bucket\n")
 			fmt.Printf("                  before deleting it.  @R{This is dangerous}.\n\n")
@@ -404,6 +431,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to upload to.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
@@ -485,6 +520,14 @@ func main() {
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
 
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
+
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to search.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
 
@@ -561,6 +604,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to search.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
@@ -644,6 +695,14 @@ func main() {
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
 
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
+
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
 
@@ -711,6 +770,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to list.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
@@ -780,6 +847,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
@@ -857,6 +932,14 @@ func main() {
 			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
 			fmt.Printf("                  should be suitable for actual AWS S3.\n")
 			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+			fmt.Printf("                  Can be set via @W{$S3_REGION}.\n\n")
+
+			fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+			fmt.Printf("  -P              By default, @G{s3} uses DNS (name) based bucket\n")
+			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
