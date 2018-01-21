@@ -59,6 +59,12 @@ var opts struct {
 
 	List struct {
 	} `cli:"ls, list"`
+
+	ChangeACL struct {
+	} `cli:"chacl, change-acl"`
+
+	ListACL struct {
+	} `cli:"lsacl, list-acl"`
 }
 
 func client() (*s3.Client, error) {
@@ -153,6 +159,9 @@ func main() {
 		fmt.Printf("  @C{url}             Print the HTTPS URL for a file in S3.\n")
 		fmt.Printf("  @C{rm}              Delete file from a bucket.\n")
 		fmt.Printf("  @C{ls}              List the files in a bucket.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  @C{chacl}           Change the ACL on a bucket or a file.\n")
+		fmt.Printf("  @C{lsacl}           List the ACL on a bucket or a file.\n")
 		fmt.Printf("\n")
 
 		os.Exit(0)
@@ -683,8 +692,163 @@ func main() {
 		}
 		fmt.Printf("%-*s  %-*s  %-*s  %-*s  %-*s\n", w.Key, "file", w.LastModified, "last modified", w.OwnerName, "owner", w.ETag, "etag", w.Size, "size")
 		for _, f := range files {
-			fmt.Printf("@G{%-*s}  %-*s  %-*s  @C{%-*s}  @Y{%-*s}\n", w.Key, f.Key, w.LastModified, f.LastModified, w.OwnerName, f.OwnerName, w.ETag, f.ETag, w.Size, f.Size)
+			fmt.Printf("@G{%-*s}  %-*s  @M{%-*s}  @C{%-*s}  @Y{%-*s}\n", w.Key, f.Key, w.LastModified, f.LastModified, w.OwnerName, f.OwnerName, w.ETag, f.ETag, w.Size, f.Size)
 		}
+		os.Exit(0)
+	}
+
+	if command == "chacl" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{chacl} [OPTIONS] [@Y{remote/file/path}] @Y{acl}\n")
+			fmt.Printf("@M{Change the access control policy on a bucket or a file}\n\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
+			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
+
+			fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+			fmt.Printf("                  via the @W{$S3_KEY} environment variable.\n\n")
+
+			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+			fmt.Printf("                  should be suitable for actual AWS S3.\n")
+			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
+			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
+
+			fmt.Printf("  -R              Recursively change acls of the files in the bucket\n")
+			fmt.Printf("                  under the given path.  @R{This is dangerous}.\n\n")
+
+			os.Exit(0)
+		}
+		if len(args) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{!!! missing path argument.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{chacl} [OPTIONS] [@Y{remote/file/path}] @Y{acl}\n")
+			os.Exit(1)
+		}
+		if len(args) > 2 {
+			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{chacl} [OPTIONS] [@Y{remote/file/path}] @Y{acl}\n")
+			os.Exit(1)
+		}
+
+		if opts.Bucket == "" {
+			bail(fmt.Errorf("missing required --bucket option."))
+		}
+
+		c, err := client()
+		bail(err)
+
+		var path, acl string
+		if len(args) == 1 {
+			path = ""
+			acl = args[0]
+		} else {
+			path = args[0]
+			acl = args[1]
+		}
+
+		if opts.Recursive {
+			root := strings.TrimSuffix(path, "/")
+			debugf("recursively changing the acl of all files under @Y{%s}:@C{%s}", c.Bucket, root)
+
+			files, err := c.List()
+			bail(err)
+
+			for _, f := range files {
+				if strings.HasPrefix(f.Key, root+"/") {
+					debugf("  - chacl @Y{%s} @C{%s}", f.Key, acl)
+					bail(c.ChangeACL(f.Key, acl))
+				} else {
+					debugf("  - skipping @C{%s}", f.Key)
+				}
+			}
+		}
+
+		debugf("chacl @Y{%s} @C{%s}", path, acl)
+		bail(c.ChangeACL(path, acl))
+		os.Exit(0)
+	}
+
+	if command == "lsacl" {
+		if opts.Help {
+			fmt.Printf("USAGE: @C{s3} @G{lsacl} [OPTIONS] [@Y{remote/file/path}] \n")
+			fmt.Printf("@M{list the access control policy on a bucket or a file}\n\n")
+			fmt.Printf("OPTIONS\n\n")
+			fmt.Printf("  --help, -h      Show this help screen.\n")
+			fmt.Printf("  --version, -v   Print @G{s3} version information, then exit.\n")
+			fmt.Printf("  --debug, -D     Enable verbose logging of what @G{s3} is doing.\n")
+			fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n\n")
+
+			fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+			fmt.Printf("                  the @W{$S3_AKI} environment variable.\n\n")
+
+			fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+			fmt.Printf("                  via the @W{$S3_KEY} environment variable.\n\n")
+
+			fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+			fmt.Printf("                  should be suitable for actual AWS S3.\n")
+			fmt.Printf("                  Can be set via @W{$S3_URL}.\n\n")
+
+			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
+			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
+
+			fmt.Printf("  -R              Recursively list acls of the files in the bucket\n")
+			fmt.Printf("                  under the given path.\n\n")
+
+			os.Exit(0)
+		}
+		if len(args) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{!!! missing path argument.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{lsacl} [OPTIONS] [@Y{remote/file/path}] \n")
+			os.Exit(1)
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
+			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{lsacl} [OPTIONS] [@Y{remote/file/path}] \n")
+			os.Exit(1)
+		}
+
+		if opts.Bucket == "" {
+			bail(fmt.Errorf("missing required --bucket option."))
+		}
+
+		c, err := client()
+		bail(err)
+
+		path := ""
+		if len(args) == 1 {
+			path = args[0]
+		}
+
+		if opts.Recursive {
+			root := strings.TrimSuffix(path, "/")
+			debugf("recursively retrieving the acl of all files under @Y{%s}:@C{%s}", c.Bucket, root)
+
+			files, err := c.List()
+			bail(err)
+
+			w := 0
+			for _, f := range files {
+				w = max(w, len(f.Key))
+			}
+			for _, f := range files {
+				if root == "" || f.Key == root || strings.HasPrefix(f.Key, root+"/") {
+					acl, err := c.GetACL(f.Key)
+					bail(err)
+					printacl(w, f.Key, acl)
+				}
+			}
+			os.Exit(0)
+		}
+
+		acl, err := c.GetACL(path)
+		bail(err)
+		printacl(len(path), path, acl)
 		os.Exit(0)
 	}
 
@@ -695,6 +859,25 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Have you tried running @Y{s3 commands}?\n")
 	}
 	os.Exit(1)
+}
+
+func printacl(width int, file string, acl s3.ACL) {
+	for i, grant := range acl {
+		if i == 0 {
+			fmt.Printf("@Y{%*s}  ", width, file)
+		} else {
+			fmt.Printf("%*s  ", width, "")
+		}
+		if grant.GranteeName != "" {
+			fmt.Printf("@M{user}  @C{%s} has @G{%s}\n", grant.GranteeName, grant.Permission)
+		} else {
+			fmt.Printf("@M{group} @C{%s} has @G{%s}\n", grant.Group, grant.Permission)
+		}
+	}
+
+	if len(acl) == 0 {
+		fmt.Printf("%s  (no grants in acl)\n", file)
+	}
 }
 
 func max(a, b int) int {
