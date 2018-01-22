@@ -26,7 +26,8 @@ var opts struct {
 	URL    string `cli:"--s3-url"     env:"S3_URL"`
 	Region string `cli:"-r, --region" env:"S3_REGION"`
 
-	PathBased bool `cli:"-P, --path-buckets" env:"S3_USE_PATH"`
+	SkipVerify bool `cli:"-k, --insecure"     env:"S3_INSECURE"`
+	PathBased  bool `cli:"-P, --path-buckets" env:"S3_USE_PATH"`
 
 	Recursive bool `cli:"-R"`
 
@@ -105,12 +106,13 @@ func client() (*s3.Client, error) {
 	}
 
 	return s3.NewClient(&s3.Client{
-		AccessKeyID:     opts.ID,
-		SecretAccessKey: opts.Key,
-		Domain:          domain,
-		Region:          opts.Region,
-		Bucket:          opts.Bucket,
-		UsePathBuckets:  opts.PathBased,
+		AccessKeyID:        opts.ID,
+		SecretAccessKey:    opts.Key,
+		Domain:             domain,
+		Region:             opts.Region,
+		Bucket:             opts.Bucket,
+		UsePathBuckets:     opts.PathBased,
+		InsecureSkipVerify: opts.SkipVerify,
 	})
 }
 
