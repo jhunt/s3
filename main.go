@@ -497,7 +497,7 @@ func main() {
 			defer from.Close()
 		}
 
-		_, err = u.Stream(from, 5*(2<<30))
+		_, err = u.Stream(from, 5*(2<<20))
 		bail(err)
 
 		err = u.Done()
