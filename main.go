@@ -862,7 +862,7 @@ func main() {
 			fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
 			fmt.Printf("                  Can be set via @W{$S3_USE_PATH=yes}.\n\n")
 
-			fmt.Printf("  --bucket NAME   The name of the S3 bucket to remove from.\n")
+			fmt.Printf("  --bucket NAME   The name of the S3 bucket to change acls on.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
 
 			fmt.Printf("  -R              Recursively change acls of the files in the bucket\n")
