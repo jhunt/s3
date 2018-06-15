@@ -46,6 +46,12 @@
 			"path": "golang.org/x/net/proxy",
 			"revision": "44808abda441f1c211bb8a52aa10be90ff5e82dc",
 			"revisionTime": "2017-12-06T03:18:27Z"
+		},
+		{
+			"checksumSHA1": "PKtIAxlXavF/8C+mDdOq3oNpeuM=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "8c0ece68c28377f4c326d85b94f8df0dace46f80",
+			"revisionTime": "2018-03-12T16:10:05Z"
 		}
 	],
 	"rootPath": "github.com/jhunt/s3"
