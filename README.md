@@ -12,7 +12,8 @@ Access Key (key).  Several also need to know what bucket and what
 region you are interacting with.
 
 You can pass these as CLI arguments; namely, `--aki`, `--key`,
-`--bucket` or `-b`, and `--region` or `-r`.
+`--bucket` or `-b`, and `--region` or `-r`. By default, `s3`
+targets AWS S3, which can be changed via `--s3-url`
 
 You can also set them in your environment, by prefixing the long
 option names with `S3_`, and switching everything to uppercase,
@@ -23,6 +24,7 @@ the way the gods intended environment variables to be named:
    - `S3_REGION` - The name of the AWS region.  Defaults to
      _us-east-1_, because the author lives on the east coast.
    - `S3_BUCKET` - The name of the bucket.
+   - `S3_URL` - The endpoint of the S3 API.
 
 To create a bucket:
 
