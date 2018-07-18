@@ -21,10 +21,10 @@
 			"revisionTime": "2017-10-17T04:30:50Z"
 		},
 		{
-			"checksumSHA1": "45fNBRiVYZKhl4KlkUVMl8/2paQ=",
+			"checksumSHA1": "iB54Yrepli7HOuMaKYXD5wWxvbw=",
 			"path": "github.com/jhunt/go-s3",
-			"revision": "94341002c9be2c159003771d63730e58b6e87d5d",
-			"revisionTime": "2018-06-18T01:23:26Z"
+			"revision": "d32cc07f418ab6113e7835ce9e0b9f8245362934",
+			"revisionTime": "2018-06-28T11:44:56Z"
 		},
 		{
 			"checksumSHA1": "/L4hlvjltOZXrXJOrVRBdcWDAQc=",
