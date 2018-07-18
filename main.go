@@ -34,6 +34,8 @@ var opts struct {
 	Commands struct{} `cli:"commands"`
 	ACLs     struct{} `cli:"acls"`
 
+	ShowHelp struct{} `cli:"help"`
+
 	ListBuckets struct {
 	} `cli:"list-buckets, lsb"`
 
@@ -150,6 +152,36 @@ func main() {
 
 	if opts.Version {
 		fmt.Printf("s3 %s\n", version())
+		os.Exit(0)
+	}
+
+	if command == "help" || (opts.Help && command == "") {
+		fmt.Printf("General usage: @G{s3} @C{COMMAND} @W{[OPTIONS...]}\n\n")
+		fmt.Printf("OPTIONS\n\n")
+		fmt.Printf("  --help, -h      Show this help screen.\n")
+		fmt.Printf("  --version, -v   Print s3 version information, then exit.\n")
+		fmt.Printf("  --debug, -D     Enable verbose logging of what s3 is doing.\n")
+		fmt.Printf("  --trace, -T     Enable HTTP tracing of S3 communication.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --aki KEY-ID    The Amazon Key ID to use.  Can be set via\n")
+		fmt.Printf("                  the $S3_AKI environment variable.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --key SECRET    The Amazon Secret Key to use.  Can be set\n")
+		fmt.Printf("                  via the $S3_KEY environment variable.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --s3-url URL    The full URL to your S3 system.  The default\n")
+		fmt.Printf("                  should be suitable for actual AWS S3.\n")
+		fmt.Printf("                  Can be set via $S3_URL.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --region, -r    The S3 region to operate in.  Defaults to us-east-1.\n")
+		fmt.Printf("                  Can be set via $S3_REGION.\n")
+		fmt.Printf("\n")
+		fmt.Printf("  --path-buckets  Use path-based addressing for buckets.\n")
+		fmt.Printf("  -P              By default, s3 uses DNS (name) based bucket\n")
+		fmt.Printf("                  addressing, which confuses some S3 work-alikes.\n")
+		fmt.Printf("                  Can be set via $S3_USE_PATH=yes.\n")
+		fmt.Printf("\n")
+		fmt.Printf("For a list of all available s3 commands, run `@W{s3 commands}'\n")
 		os.Exit(0)
 	}
 
