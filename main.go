@@ -516,7 +516,7 @@ func main() {
 		c, err := client()
 		bail(err)
 
-		u, err := c.NewUpload(opts.Upload.To)
+		u, err := c.NewUpload(opts.Upload.To, nil)
 		bail(err)
 
 		from := os.Stdin

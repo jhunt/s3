@@ -71,12 +71,6 @@ func v2Headers(req *http.Request) []byte {
 			names = append(names, lc)
 			subset[lc] = strings.Trim(req.Header.Get(header), " \t\r\n\f") + "\n"
 		}
-		/* EMC ECS has custom x-emc-* headers that need signed.
-		   This is non-conformant with the Amazon "standard" */
-		if strings.HasPrefix(lc, "x-emc-") {
-			names = append(names, lc)
-			subset[lc] = strings.Trim(req.Header.Get(header), " \t\r\n\f") + "\n"
-		}
 	}
 	sort.Strings(names)
 
@@ -121,12 +115,6 @@ func v4Headers(req *http.Request) ([]byte, []byte) {
 		if lc == "host" || strings.HasPrefix(lc, "x-amz-") {
 			names = append(names, lc)
 			subset[lc] = strings.Trim(req.Header.Get(header), " \t\r\n\f")
-		}
-		/* EMC ECS has custom x-emc-* headers that need signed.
-		   This is non-conformant with the Amazon "standard" */
-		if strings.HasPrefix(lc, "x-emc-") {
-			names = append(names, lc)
-			subset[lc] = strings.Trim(req.Header.Get(header), " \t\r\n\f") + "\n"
 		}
 	}
 	sort.Strings(names)
