@@ -495,45 +495,50 @@ func main() {
 			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{put} [OPTIONS] @Y{local/file/path}\n")
 			os.Exit(1)
 		}
-		if len(args) > 1 {
-			fmt.Fprintf(os.Stderr, "@R{!!! too many arguments.}\n")
-			fmt.Fprintf(os.Stderr, "USAGE: @C{s3} @G{put} [OPTIONS] @Y{local/file/path}\n")
-			os.Exit(1)
-		}
 
 		if opts.Bucket == "" {
 			bail(fmt.Errorf("missing required --bucket option."))
 		}
 
-		if opts.Upload.To == "" {
-			if args[0] == "-" {
+		for _, arg := range args {
+			if arg == "-" && opts.Upload.To == "" {
 				bail(fmt.Errorf("uploading from stdin requires the --to option."))
 			}
-			opts.Upload.To = strings.TrimLeft(args[0], "./")
-			debugf("determined upload file path to be @C{%s}", opts.Upload.To)
+		}
+
+		if opts.Upload.To != "" && len(args) > 1 {
+			bail(fmt.Errorf("the --to option cannot be specified with multiple uploads."))
 		}
 
 		c, err := client()
 		bail(err)
 
-		u, err := c.NewUpload(opts.Upload.To, nil)
-		bail(err)
+		for _, file := range args {
+			to := opts.Upload.To
+			if to == "" {
+				to = strings.TrimLeft(file, "./")
+			}
 
-		from := os.Stdin
-		if args[0] == "-" {
-			debugf("streaming data from @G{standard input} to @Y{%s}:@C{%s}", c.Bucket, opts.Upload.To)
-		} else {
-			debugf("uploading @C{%s} to @Y{%s}:@C{%s}", args[0], c.Bucket, opts.Upload.To)
-			from, err = os.Open(args[0])
+			debugf("determined upload file path to be @C{%s}", to)
+			u, err := c.NewUpload(to, nil)
 			bail(err)
-			defer from.Close()
+
+			from := os.Stdin
+			if file == "-" {
+				debugf("streaming data from @G{standard input} to @Y{%s}:@C{%s}", c.Bucket, to)
+			} else {
+				debugf("uploading @C{%s} to @Y{%s}:@C{%s}", file, c.Bucket, to)
+				from, err = os.Open(file)
+				bail(err)
+				defer from.Close()
+			}
+
+			_, err = u.Stream(from, 5*(2<<20))
+			bail(err)
+
+			err = u.Done()
+			bail(err)
 		}
-
-		_, err = u.Stream(from, 5*(2<<20))
-		bail(err)
-
-		err = u.Done()
-		bail(err)
 
 		os.Exit(0)
 	}
