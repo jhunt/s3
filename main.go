@@ -301,6 +301,11 @@ func main() {
 		bb, err := c.ListBuckets()
 		bail(err)
 
+		if len(bb) == 0 {
+			fmt.Fprintf(os.Stderr, "@R{no buckets found.}\n")
+			os.Exit(0)
+		}
+
 		w := struct {
 			Name         int
 			CreationDate int
@@ -318,9 +323,6 @@ func main() {
 		fmt.Printf("%-*s  %-*s  %-*s\n", w.Name, "bucket", w.CreationDate, "created at", w.OwnerName, "owner")
 		for _, b := range bb {
 			fmt.Printf("@G{%-*s}  %-*s  @M{%-*s}\n", w.Name, b.Name, w.CreationDate, b.CreationDate, w.OwnerName, b.OwnerName)
-		}
-		if len(bb) == 0 {
-			fmt.Fprintf(os.Stderr, "@R{no buckets found.}\n")
 		}
 		os.Exit(0)
 	}
