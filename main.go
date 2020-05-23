@@ -77,6 +77,7 @@ var opts struct {
 
 func client() (*s3.Client, error) {
 	domain := ""
+	scheme := ""
 	if opts.URL != "" {
 		debugf("parsing domain from url @G{%s}...", opts.URL)
 		u, err := url.Parse(opts.URL)
@@ -84,6 +85,7 @@ func client() (*s3.Client, error) {
 			return nil, fmt.Errorf("invalid --s3-url '%s': %s", opts.URL, err)
 		}
 		domain = u.Host
+		scheme = u.Scheme
 	}
 
 	if opts.ID == "" {
@@ -111,6 +113,7 @@ func client() (*s3.Client, error) {
 		AccessKeyID:        opts.ID,
 		SecretAccessKey:    opts.Key,
 		Domain:             domain,
+		Protocol:           scheme,
 		Region:             opts.Region,
 		Bucket:             opts.Bucket,
 		UsePathBuckets:     opts.PathBased,
