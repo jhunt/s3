@@ -52,6 +52,7 @@ var opts struct {
 	Upload struct {
 		To          string `cli:"--to"`
 		ContentType string `cli:"-t, --content-type"`
+		Parallel    int    `cli:"-n, --parallel"      env:"S3_THREADS"`
 	} `cli:"put, upload"`
 
 	Download struct {
@@ -148,6 +149,7 @@ func main() {
 	env.Override(&opts)
 	opts.Region = "us-east-1"
 	opts.CreateBucket.ACL = "private"
+	opts.Upload.Parallel = 2
 
 	command, args, err := cli.Parse(&opts)
 	if err != nil {
@@ -488,6 +490,13 @@ func main() {
 			fmt.Printf("  --bucket NAME   The name of the S3 bucket to upload to.\n")
 			fmt.Printf("   -b NAME        Can be set via @W{$S3_BUCKET}.\n\n")
 
+			fmt.Printf("  --parallel N    How many parallel I/O threads to spin up for upload\n")
+			fmt.Printf("  -n N            purposes.  More threads may reduce total time to\n")
+			fmt.Printf("                  upload data (bandwidth permitting) at the expense\n")
+			fmt.Printf("                  of increased local system CPU / RAM usage.\n")
+			fmt.Printf("                  Defaults to 2.\n")
+			fmt.Printf("                  Can be set via @W{$S3_THREADS=N}.\n\n")
+
 			fmt.Printf("  --to rel/path   The relative path (inside the bucket) to upload\n")
 			fmt.Printf("                  the file to.  Defaults to the given path with\n")
 			fmt.Printf("                  all leading . and / characters removed.\n\n")
@@ -525,6 +534,8 @@ func main() {
 
 		c, err := client()
 		bail(err)
+
+		debugf("spinning up @W{%d} i/o thread(s) for uploading data.", opts.Upload.Parallel)
 
 		preamble := make([]byte, 512)
 		for _, file := range args {
@@ -573,7 +584,8 @@ func main() {
 			})
 			bail(err)
 
-			_, err = u.Stream(rd, 5*(2<<20))
+			// 1<<20 == 2^20
+			_, err = u.ParallelStream(rd, 5*(1<<20), opts.Upload.Parallel)
 			bail(err)
 
 			err = u.Done()
