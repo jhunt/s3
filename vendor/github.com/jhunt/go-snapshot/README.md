@@ -1,6 +1,8 @@
 snapshot
 ========
 
+![Travis CI](https://travis-ci.org/jhunt/go-snapshot.svg?branch=master)
+
 Sometimes you need to experiment.
 
 ```
