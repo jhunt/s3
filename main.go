@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -49,7 +50,8 @@ var opts struct {
 	Bucket string `cli:"-b, --bucket" env:"S3_BUCKET"`
 
 	Upload struct {
-		To string `cli:"--to"`
+		To          string `cli:"--to"`
+		ContentType string `cli:"-t, --content-type"`
 	} `cli:"put, upload"`
 
 	Download struct {
@@ -490,6 +492,12 @@ func main() {
 			fmt.Printf("                  the file to.  Defaults to the given path with\n")
 			fmt.Printf("                  all leading . and / characters removed.\n\n")
 
+			fmt.Printf("  --content-type  TYPE\n")
+			fmt.Printf("  -t TYPE\n")
+			fmt.Printf("                  The MIME Content-Type to set for the uploaded file.\n")
+			fmt.Printf("                  By default, this will be automatically detected\n")
+			fmt.Printf("                  from the first 512 bytes of the input.\n\n")
+
 			fmt.Printf("  You can give the file name to upload as @Y{-}, in which case\n")
 			fmt.Printf("  the data to upload will be read from standard input, and the\n")
 			fmt.Printf("  destination option (@W{--to}) must be specified.\n\n")
@@ -518,15 +526,12 @@ func main() {
 		c, err := client()
 		bail(err)
 
+		preamble := make([]byte, 512)
 		for _, file := range args {
 			to := opts.Upload.To
 			if to == "" {
 				to = strings.TrimLeft(file, "./")
 			}
-
-			debugf("determined upload file path to be @C{%s}", to)
-			u, err := c.NewUpload(to, nil)
-			bail(err)
 
 			from := os.Stdin
 			if file == "-" {
@@ -538,7 +543,37 @@ func main() {
 				defer from.Close()
 			}
 
-			_, err = u.Stream(from, 5*(2<<20))
+			n := 0
+			ctype := ""
+			if opts.Upload.ContentType != "" {
+				ctype = opts.Upload.ContentType
+			} else {
+				debugf("@W{%s}: detecting content-type from first 512b", file)
+				n, err = from.Read(preamble)
+				bail(err)
+
+				ctype = http.DetectContentType(preamble)
+			}
+
+			rd, wr := io.Pipe()
+			go func() {
+				for n > 0 {
+					writ, err := wr.Write(preamble)
+					bail(err)
+					preamble = preamble[writ:]
+					n -= writ
+				}
+				io.Copy(wr, from)
+				wr.Close()
+			}()
+
+			debugf("@W{%s}: uploading @M{%s} file to @C{%s}", file, ctype, to)
+			u, err := c.NewUpload(to, &http.Header{
+				"Content-Type": []string{ctype},
+			})
+			bail(err)
+
+			_, err = u.Stream(rd, 5*(2<<20))
 			bail(err)
 
 			err = u.Done()
