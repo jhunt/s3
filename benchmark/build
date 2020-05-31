@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker build -t filefrog/s3-benchmark-hyperfine:latest -f $PWD/Dockerfile ..
+docker push filefrog/s3-benchmark-hyperfine:latest

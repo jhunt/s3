@@ -1,0 +1,55 @@
+version: '3.0'
+services:
+  bench:
+    build:
+      context: ..
+      dockerfile: $PWD/Dockerfile
+
+    command:
+      - --show-output
+      - --warmup
+      - '3'
+      - --prepare
+      - sleep 5 && s3 create-bucket benchy >/dev/null 2>&1 || true
+      - --export-json
+      - /reports/report.json
+      - --export-markdown
+      - /reports/report.md
+      - s3 put -n1 10M
+      - s3 put -n2 10M
+      - s3 put -n4 10M
+      #- s3 put -n8 10M
+      #- s3 put -n16 10M
+      #- s3 put -n32 10M
+      - s3 put -n1 100M
+      - s3 put -n2 100M
+      - s3 put -n4 100M
+      #- s3 put -n8 100M
+      #- s3 put -n16 100M
+      #- s3 put -n32 100M
+      - s3 put -n1 1000M
+      - s3 put -n2 1000M
+      - s3 put -n4 1000M
+      #- s3 put -n8 1000M
+      #- s3 put -n16 1000M
+      #- s3 put -n32 1000M
+
+    environment:
+      - S3_BUCKET=benchy
+      - S3_AKI=AKIMINIO
+      - S3_KEY=AKIsekrit
+      - S3_URL=http://s3:9000
+      - S3_USE_PATH=yes
+
+    volumes:
+      - $PWD/reports:/reports
+
+  s3:
+    image: minio/minio
+    command:
+      - server
+      - /data
+
+    environment:
+      - MINIO_ACCESS_KEY=AKIMINIO
+      - MINIO_SECRET_KEY=AKIsekrit

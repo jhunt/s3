@@ -1,0 +1,164 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: benchmark
+  labels:
+    benchamrk: s3
+    env: dev
+spec:
+  template:
+    metadata:
+      labels:
+        benchmark: s3
+        env: dev
+        component: hyperfine
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: setup
+          image: filefrog/s3-benchmark-hyperfine
+          command:
+            - /bin/sh
+            - -c
+            - s3 create-bucket $S3_BUCKET || true
+
+          env: &s3
+            - name: S3_AKI
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: aki
+            - name: S3_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: key
+            - name:  S3_BUCKET
+              value: benchy
+            - name:  S3_USE_PATH
+              value: 'yes'
+            - name:  S3_URL
+              value: http://minio.go-s3.svc.cluster.local/
+
+        - name: bench10mb
+          image: filefrog/s3-benchmark-hyperfine
+          command:
+            - hyperfine
+            - --show-output
+            - --warmup
+            - '3'
+            - --export-json
+            - /reports/10MiB.json
+            - --export-markdown
+            - /reports/10MiB.md
+            - s3 put -n1 10M
+            - s3 put -n2 10M
+            - s3 put -n4 10M
+            - s3 put -n8 10M
+            - s3 put -n16 10M
+            - s3 put -n32 10M
+
+          env: *s3
+
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+
+        - name: bench100mb
+          image: filefrog/s3-benchmark-hyperfine
+          command:
+            - hyperfine
+            - --show-output
+            - --warmup
+            - '3'
+            - --export-json
+            - /reports/100MiB.json
+            - --export-markdown
+            - /reports/100MiB.md
+            - s3 put -n1 100M
+            - s3 put -n2 100M
+            - s3 put -n4 100M
+            - s3 put -n8 100M
+            - s3 put -n16 100M
+            - s3 put -n32 100M
+
+          env: *s3
+
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+
+        - name: bench1000mb
+          image: filefrog/s3-benchmark-hyperfine
+          command:
+            - hyperfine
+            - --show-output
+            - --warmup
+            - '3'
+            - --export-json
+            - /reports/1000MiB.json
+            - --export-markdown
+            - /reports/1000MiB.md
+            - s3 put -n1 1000M
+            - s3 put -n2 1000M
+            - s3 put -n4 1000M
+            - s3 put -n8 1000M
+            - s3 put -n16 1000M
+            - s3 put -n32 1000M
+
+          env: *s3
+
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+
+        - name: json
+          image: alpine
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo '{"10MiB":'
+              cat /reports/10MiB.json
+              echo ',"100MiB":'
+              cat /reports/100MiB.json
+              echo ',"100MiB":'
+              cat /reports/1000MiB.json
+              echo '}'
+
+        - name: md
+          image: alpine
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "## 10MiB Upload"; echo
+              cat /reports/10MiB.md; echo
+              echo "## 100MiB Upload"; echo
+              cat /reports/100MiB.md; echo
+              echo "## 1000MiB Upload"; echo
+              cat /reports/1000MiB.md; echo
+
+      containers:
+        - name: done
+          image: alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "done"
+              echo
+              echo "Check the 'json' and 'md' containers for"
+              echo "the JSON and Markdown reports, respecitvely."
+              exit 0
+
+      volumes:
+        - name: reports
+          emptyDir:

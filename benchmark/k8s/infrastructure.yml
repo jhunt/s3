@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio
+stringData:
+  aki: AKIMINIO
+  key: dflsjdhflkjsdf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    benchmark: s3
+    env: dev
+spec:
+  type: ClusterIP
+  selector:
+    benchmark: s3
+    env: dev
+    component: minio
+  ports:
+    - name: minio
+      port: 80
+      protocol: TCP
+      targetPort: minio
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    benchmark: s3
+    env: dev
+spec:
+  serviceName: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      benchmark: s3
+      env: dev
+      component: minio
+
+  template:
+    metadata:
+      labels:
+        benchmark: s3
+        env: dev
+        component: minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio
+          command:
+            - minio
+            - server
+            - /data
+
+          ports:
+            - name: minio
+              protocol: TCP
+              containerPort: 9000
+
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: aki
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: key
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+      volumes:
+        - name: data
+          emptyDir:
